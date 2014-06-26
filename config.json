@@ -1,0 +1,11 @@
+{
+    "r" : 25,
+    "width" : 1920,
+    "height" : 1080,
+    "aspect" : "16:9",
+    "pix_fmt" : "yuv422p",
+    "c:v" : "dnxhd",
+    "b:v" : "36M",
+    "ar"  : 48000,
+    "c:a" : "pcm_s16le"
+}
