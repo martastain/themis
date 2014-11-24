@@ -1,0 +1,15 @@
+{
+    "name" : "DNxHD 1080p25 36Mbps",
+    "fps" : 25,
+    "loudness" : -23.0,
+    "deinterlace" : true,
+    "container" : "mov",
+
+    "width" : 1920,
+    "height" : 1080,
+    "pixel_format" : "yuv422p",
+    "video_codec" : "dnxhd",
+    "video_bitrate" : "36M",
+    "audio_codec" : "pcm_s16le",
+    "audio_sample_rate" : 48000
+}
