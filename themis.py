@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import os
 import sys
@@ -7,6 +8,7 @@ import uuid
 import json
 import tempfile
 import subprocess
+
 
 
 if sys.version_info[:2] >= (3, 0):
@@ -197,10 +199,7 @@ class Themis():
             return False
 
         self.probe_result = json.loads(decode_if_py3(proc.stdout.read()))
-#        from pprint import pprint
-#        pprint(self.probe_result)
-#        sys.exit(0)
-#        return self.probe_result
+        return self.probe_result
 
 
     def r128(self):
@@ -235,7 +234,7 @@ class Themis():
         self.probe()
         self.logging.debug("Loudness metering")
         self.r128()
-        self.logging.debug("Source loudness:", self.loudness, "LUFS")
+        self.logging.debug("Source loudness: {} LUFS".format(self.loudness))
 
 
     def process(self, output, profile):
@@ -282,10 +281,11 @@ class Themis():
 
         track_indices = atracks.keys()
         atrack = {}
-        try:
+        
+        if track_indices:
             atrack = atracks[min(track_indices)]
             has_audio = True
-        except IndexError:
+        else:
             has_audio = False
 
         duration = source_vdur or float(format_info["duration"])
@@ -305,7 +305,7 @@ class Themis():
 
         for key, val in compare_v:
             if profile[key] != val:
-                self.logging.debug("Source", key, "does not match target format. IS:", val, "SHOULD BE:", profile[key])
+                self.logging.debug("Source {} does not match target format. IS: {} SHOULD BE: {}".format(key, val, profile[key]) )
                 encode_video = True
                 break
         else:
@@ -336,8 +336,8 @@ class Themis():
             filters.append(filter_arc(profile["width"], profile["height"], source_dar) )
 
             if source_fps >= profile_fps or profile_fps - source_fps > 4:
-                self.logging.debug("Source FPS:", source_fps)
-                self.logging.debug("Target FPS:", profile_fps)
+                self.logging.debug("Source FPS: {}".format(source_fps))
+                self.logging.debug("Target FPS: {}".format(profile_fps))
 
                 cmd = [
                     "-i", self.fname,
@@ -365,7 +365,7 @@ class Themis():
                         cmd.append(profile["audio_bitrate"])
 
                     if gain:
-                        self.logging.debug("Adjusting gain by", gain, "dB")
+                        self.logging.debug("Adjusting gain by {} dB".format(gain))
                         cmd.append("-filter:a")
                         cmd.append("volume={}dB".format(gain))
 
@@ -376,7 +376,7 @@ class Themis():
                 result = ffmpeg.start(handler=lambda x: sys.stdout.write("\r{} of {}".format(x, int(duration*source_fps))))
 
                 if result:
-                    logging.error("Encoding failed:", ffmpeg.error)
+                    logging.error("Encoding failed: {}".format(ffmpeg.error))
                     return False
 
             else:
@@ -400,7 +400,7 @@ class Themis():
                     ffmpeg = FFMpeg(*cmd)
                     result = ffmpeg.start()
                     if result:
-                        logging.error("Audio extraction failed:", ffmpeg.error)
+                        logging.error("Audio extraction failed: {}".format(ffmpeg.error))
                         return False
 
 
@@ -411,12 +411,12 @@ class Themis():
                         ]
 
                     if sox_tempo:
-                        self.logging.debug("SOX Tempo:", sox_tempo)
+                        self.logging.debug("SOX Tempo: {}".format(sox_tempo))
                         cmd.append("tempo")
                         cmd.append(sox_tempo)
 
                     if gain:
-                        self.logging.debug("SOX Gain:", gain)
+                        self.logging.debug("SOX Gain: {}".format(gain))
                         cmd.append("gain")
                         cmd.append(gain)
 
@@ -425,7 +425,7 @@ class Themis():
                     result = sox.start()
 
                     if result:
-                        logging.error("SOX Failed:", sox.error)
+                        logging.error("SOX Failed: {}".format(sox.error))
                         return False
 
 
@@ -485,15 +485,22 @@ class Themis():
                 p1.proc.stdout.close()
 
 
-                p2.check_output(handler=handler)
+                while True:
+                    if p1.proc.poll() != None:
+                        print ("Proc 1 ended")
+                    elif p2.proc.poll() != None:
+                        print ("Proc 2 ended")
+                    else:
+                        time.sleep(.001)
+                        continue
+                    
+                    break
 
-
-            
 
 
         # Just change audio gain
         elif gain:
-            self.logging.debug("Adjusting gain by", gain, "dB")
+            self.logging.info("Adjusting gain by {} dB".format(gain))
             cmd = [
                     "-i", self.fname,
 
@@ -521,14 +528,11 @@ class Themis():
 
 
         else:
-            pass
-            #just move
+            self.logging.info("Moving file".format(gain))
+            os.rename(self.fname, output)
 
-
-        self.set_status("Import completed")
-
-
-
+    
+        return True
 
 
 
