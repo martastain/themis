@@ -10,7 +10,6 @@ import tempfile
 import subprocess
 
 
-
 if sys.version_info[:2] >= (3, 0):
     decode_if_py3 = lambda x: x.decode("utf8")
 else:
@@ -65,7 +64,7 @@ def filter_arc(w, h, aspect):
 
 class BaseProcessor():
     default_args = []
-    
+
     def __init__(self, *args):
         self.args = []
         for arg in self.default_args:
@@ -75,8 +74,9 @@ class BaseProcessor():
         self.proc = None    
         self.err = ""    
         self.buff = ""    
-    
+
     def start(self, **kwargs):
+        print (" ".join(self.args))
         self.proc = subprocess.Popen(
             self.args, 
             stdin=kwargs.get("stdin", None), 
@@ -139,7 +139,7 @@ class Themis():
 
         self.fname = fname
         self.kwargs = kwargs
-        
+
         self.loudness = False
         self.probe_result = {}
         self.tempfiles = []
@@ -189,13 +189,13 @@ class Themis():
             "-print_format", "json",
             self.fname
             ]
-
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        FNULL = open(os.devnull, "w")
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=FNULL)
         while proc.poll() == None:
             time.sleep(.1)
 
         if proc.returncode:
-            logging.error("Unable to ffprobe")
+            self.logging.error("Unable to ffprobe")
             return False
 
         self.probe_result = json.loads(decode_if_py3(proc.stdout.read()))
@@ -250,7 +250,7 @@ class Themis():
 
         for stream in self.probe_result["streams"]:
             if stream["codec_type"] == "video":
-                
+
                 # Frame rate detection
                 fps_n, fps_d = [float(e) for e in stream["r_frame_rate"].split("/")]
                 source_fps = fps_n / fps_d
@@ -269,7 +269,7 @@ class Themis():
                     source_vdur = float(stream["duration"])
                 except: 
                     source_vdur = False
-                 
+
                 source_vcodec = stream["codec_name"]
                 source_width = stream["width"]
                 source_height = stream["height"]
@@ -281,7 +281,7 @@ class Themis():
 
         track_indices = atracks.keys()
         atrack = {}
-        
+
         if track_indices:
             atrack = atracks[min(track_indices)]
             has_audio = True
@@ -314,7 +314,7 @@ class Themis():
 
         ## Check, which streams must be re-encoded
         ###################################################################
-       
+
         profile_fps = profile.get("fps", 25)
 
         if self.loudness:
@@ -326,7 +326,6 @@ class Themis():
 
 
 
-        
         if encode_video:
 
             filters = []
@@ -368,6 +367,13 @@ class Themis():
                         self.logging.debug("Adjusting gain by {} dB".format(gain))
                         cmd.append("-filter:a")
                         cmd.append("volume={}dB".format(gain))
+
+
+                cmd.append("-map_metadata")
+                cmd.append("-1")
+
+                cmd.append("-video_track_timescale")
+                cmd.append(profile_fps)
 
                 cmd.append(output)
 
@@ -450,7 +456,7 @@ class Themis():
                 if has_audio:
                     cmd2.append("-i")
                     cmd2.append(audio_temp_name2)
-                    
+
                     cmd2.append("-c:a")
                     cmd2.append(profile.get("audio_codec", "pcm_s16le"))
 
@@ -464,11 +470,18 @@ class Themis():
 
                 cmd2.append("-r")
                 cmd2.append(profile_fps)
-                    
+
                 cmd2.append("-c:v")
                 cmd2.append(profile["video_codec"])
                 cmd2.append("-b:v")
                 cmd2.append(profile["video_bitrate"])
+
+
+                cmd2.append("-map_metadata")
+                cmd2.append("-1")
+
+                cmd2.append("-video_track_timescale")
+                cmd2.append(profile_fps)
 
                 cmd2.append(output)
 
@@ -493,7 +506,6 @@ class Themis():
                     else:
                         time.sleep(.001)
                         continue
-                    
                     break
 
 
@@ -518,38 +530,19 @@ class Themis():
                 cmd.append("-b:a")
                 cmd.append(profile["audio_bitrate"])
 
+            cmd.append("-map_metadata")
+            cmd.append("-1")
+
+            cmd.append("-video_track_timescale")
+            cmd.append(profile_fps)
+
             cmd.append(output)
 
             ffmpeg = FFMpeg(*cmd)
             ffmpeg.start()
- 
-
-            
-
 
         else:
             self.logging.info("Moving file".format(gain))
             os.rename(self.fname, output)
 
-    
         return True
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    profile = json.load(open("profiles/dnxhd36_25.json"))
-    IN = "c:\\TEMP\\input"
-    OUT = "c:\\TEMP\\output"
-
-    for fname in os.listdir(IN):
-        fpath = os.path.join(IN, fname)
-        opath = os.path.join(OUT, os.path.splitext(fname)[0]+".mov")
-
-        if not os.path.exists(opath):
-            themis = Themis(fpath)
-            themis.analyze()
-            themis.process(opath, profile)
