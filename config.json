@@ -1,0 +1,8 @@
+{
+
+    "src_dir"  : "/share/input",
+    "tgt_dir"  : "/share/output",
+    "done_dir" : "/share/done"
+}
+
+
