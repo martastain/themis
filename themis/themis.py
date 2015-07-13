@@ -211,7 +211,7 @@ class Themis():
         "info" : self.logging.info,
         "warning" : self.logging.warning,
         "error" : self.logging.error
-        }[level](message)
+        }.get(level, False)(message)
 
 
     def probe(self):
