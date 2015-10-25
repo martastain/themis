@@ -52,7 +52,8 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+transcode.json
 
-test.flv
 ffmpeg.exe
 ffprobe.exe
+
