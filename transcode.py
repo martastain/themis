@@ -129,8 +129,6 @@ class WatchFolder():
             # Transcode file
             #
 
-            #self.process(fname)
-
             output_rel_dir = os.path.split(input_rel_path)[0]
             output_dir = os.path.join(self.output_dir, output_rel_dir)
             if not os.path.exists(output_dir):
@@ -153,6 +151,9 @@ class WatchFolder():
                 self.logging.error("Encoding failed")
                 self.ignore_files.add(input_path)
 
+            #
+            # Move source file to "done" directory
+            #
 
             if self.done_dir:
                 done_dir = os.path.join(self.done_dir, output_rel_dir)
