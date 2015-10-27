@@ -15,6 +15,8 @@ transcode.py
 Example script.
 
 
+### Configuration
+
 transcode.json
 ```json
 {
