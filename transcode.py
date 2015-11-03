@@ -43,19 +43,28 @@ DEFAULT_PROFILE = {
 # get_files helper function from nxtools.files
 #
 
-def get_files(basepath, recursive=False, hidden=False, full_path=True, exts=[]):
-    if os.path.exists(basepath):
-        for filename in os.listdir(basepath):
-            if not hidden and filename.startswith("."):
+def get_files(base_path, **kwargs):
+    recursive = kwargs.get("recursive", False)
+    hidden = kwargs.get("hidden", False)
+    relative_path = kwargs.get("relative_path", False)
+    exts = kwargs.get("exts", [])
+    strip_path=kwargs.get("strip_path", base_path)
+    if os.path.exists(base_path):
+        for file_name in os.listdir(base_path):
+            if not hidden and file_name.startswith("."):
                 continue
-            filepath = os.path.join(basepath, filename) 
-            if stat.S_ISREG(os.stat(filepath)[stat.ST_MODE]): 
-                if exts and os.path.splitext(filename)[1].lstrip(".").lower() not in exts:
+            file_path = os.path.join(base_path, file_name) 
+            if S_ISREG(os.stat(file_path)[ST_MODE]): 
+                if exts and os.path.splitext(file_name)[1].lstrip(".") not in exts:
                     continue
-                yield filepath
-            elif stat.S_ISDIR(os.stat(filepath)[stat.ST_MODE]) and recursive: 
-                for f in get_files(filepath, recursive=recursive, hidden=hidden, exts=exts): 
-                    yield f
+                if relative_path:
+                    yield file_path.replace(strip_path, "", 1).lstrip(os.path.sep)
+                else:
+                    yield file_path
+            elif S_ISDIR(os.stat(file_path)[ST_MODE]) and recursive: 
+                for file_path in get_files(file_path, recursive=recursive, hidden=hidden, exts=exts, relative_path=relative_path, strip_path=strip_path): 
+                    yield file_path
+
 
 #
 # base_name helper function from nxtools.files
