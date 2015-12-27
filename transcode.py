@@ -18,10 +18,12 @@ import sets
 from themis import Themis
 from themis import Log
 
+from nxtools import *
 
-#
+
+##
 # Default encoding profile (nxtv production format)
-#
+##
 
 DEFAULT_PROFILE = {
     "name" : "DNxHD 1080p25 36Mbps",
@@ -39,43 +41,10 @@ DEFAULT_PROFILE = {
     "audio_sample_rate" : 48000
     }
 
-#
-# get_files helper function from nxtools.files
-#
 
-def get_files(base_path, **kwargs):
-    recursive = kwargs.get("recursive", False)
-    hidden = kwargs.get("hidden", False)
-    relative_path = kwargs.get("relative_path", False)
-    exts = kwargs.get("exts", [])
-    strip_path=kwargs.get("strip_path", base_path)
-    if os.path.exists(base_path):
-        for file_name in os.listdir(base_path):
-            if not hidden and file_name.startswith("."):
-                continue
-            file_path = os.path.join(base_path, file_name) 
-            if S_ISREG(os.stat(file_path)[ST_MODE]): 
-                if exts and os.path.splitext(file_name)[1].lstrip(".") not in exts:
-                    continue
-                if relative_path:
-                    yield file_path.replace(strip_path, "", 1).lstrip(os.path.sep)
-                else:
-                    yield file_path
-            elif S_ISDIR(os.stat(file_path)[ST_MODE]) and recursive: 
-                for file_path in get_files(file_path, recursive=recursive, hidden=hidden, exts=exts, relative_path=relative_path, strip_path=strip_path): 
-                    yield file_path
-
-
-#
-# base_name helper function from nxtools.files
-#
-
-def base_name(fname): 
-    return os.path.splitext(os.path.basename(fname))[0] 
-
-#
+##
 # Simple watchfolder class
-#
+##
 
 class WatchFolder():
     def __init__(self, input_dir, output_dir, **kwargs):
@@ -110,7 +79,7 @@ class WatchFolder():
                 continue
 
             input_rel_path = input_path.replace(self.input_dir, "", 1).lstrip("/")
-            input_base_name = base_name(input_rel_path)
+            input_base_name = get_base_name(input_rel_path)
             
             #
             # Check file completion
