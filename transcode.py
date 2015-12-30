@@ -6,13 +6,10 @@
 # All setting can be set using transcode.json configuration file
 #
 
-from __future__ import print_function
-
 import os
 import sys
 import time
 import json
-import stat
 import sets
 
 from themis import Themis
@@ -22,43 +19,31 @@ from nxtools import *
 
 
 ##
-# Default encoding profile (nxtv production format)
-##
-
-DEFAULT_PROFILE = {
-    "name" : "DNxHD 1080p25 36Mbps",
-    "fps" : 25,
-    "loudness" : -23.0,
-    "deinterlace" : True,
-    "container" : "mov",
-
-    "width" : 1920,
-    "height" : 1080,
-    "pixel_format" : "yuv422p",
-    "video_codec" : "dnxhd",
-    "video_bitrate" : "36M",
-    "audio_codec" : "pcm_s16le",
-    "audio_sample_rate" : 48000
-    }
-
-
-##
 # Simple watchfolder class
+# 
+# Requires
+#     - nxtools.*
+#     - os
+#     - time
+#     - sets
 ##
 
 class WatchFolder():
-    def __init__(self, input_dir, output_dir, **kwargs):
+    def __init__(self, input_dir, **kwargs):
         self.input_dir = input_dir
-        self.output_dir = output_dir
-        self.done_dir = kwargs.get("done_dir", False)
-        self.profile = kwargs.get("profile", DEFAULT_PROFILE)
-        self.logging = kwargs.get("logging", Log("Themis"))
-        self.iter_delay = kwargs.get("iter_delay", 5)
-        self.recursive = kwargs.get("recursive", True)
-        
-        self.valid_exts = ["mov", "mp4", "avi", "flv", "mpg", "mpeg", "mp4", "video", "m4v"] #TODO: Add common video files
+        self.settings = self.defaults
+        self.settings.update(**kwargs)
         self.file_sizes = {}
         self.ignore_files = sets.Set()
+
+    @property
+    def defaults(self):
+        settings = {
+            "iter_delay" : 5,
+            "recursive" : True,
+            "valid_exts" : []
+            }
+        return settings
 
     def start(self):
         while True:
@@ -74,21 +59,12 @@ class WatchFolder():
 
     def main(self):
         for input_path in get_files(self.input_dir, recursive=self.recursive, exts=self.valid_exts):
-            
             if input_path in self.ignore_files:
                 continue
-
-            input_rel_path = input_path.replace(self.input_dir, "", 1).lstrip("/")
-            input_base_name = get_base_name(input_rel_path)
-            
-            #
-            # Check file completion
-            #
-
             try:
                 f = open(input_path, "rb")
             except:
-                self.logging.debug("File creation in progress. {}".format(os.path.basename(input_path)))
+                logging.debug("File creation in progress. {}".format(os.path.basename(input_path)))
                 continue
 
             f.seek(0, 2)
@@ -100,54 +76,62 @@ class WatchFolder():
 
             if not (input_path in self.file_sizes.keys() and self.file_sizes[input_path] == file_size):
                 self.file_sizes[input_path] = file_size
-                self.logging.debug("New file {} detected (or file has been changed)".format(input_rel_path))
+                logging.debug("New file {} detected (or file has been changed)".format(input_path))
+                continue
+            self.process(input_path)
+
+    def process(self, input_path):
+        pass
+
+
+
+
+
+class ThemisWatchFolder(WatchFolder):
+    def process(self, input_path):
+        input_rel_path = input_path.replace(self.input_dir, "", 1).lstrip("/")
+        input_base_name = get_base_name(input_rel_path)
+
+        output_rel_dir = os.path.split(input_rel_path)[0]
+        output_dir = os.path.join(self.settings["output_dir"], output_rel_dir)
+        if not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir)
+            except:
+                logging.error("Unable to create output directory {}".format(output_rel_dir))
+                self.ignore_files.add(input_path)
                 continue
 
-            #
-            # Transcode file
-            #
+        output_path = os.path.join(output_dir, "{}.{}".format(input_base_name, self.profile.get("container", "mov")))
+        
+        if os.path.exists(output_path): #TODO: If not overwrite
+            continue
 
-            output_rel_dir = os.path.split(input_rel_path)[0]
-            output_dir = os.path.join(self.output_dir, output_rel_dir)
+        themis = Themis(input_path)
+
+        if not themis.process(output_path, self.profile):
+            logging.error("Encoding failed")
+            self.ignore_files.add(input_path)
+
+        ##
+        # Move source file to "done" directory
+        ##
+
+        if self.done_dir:
+            done_dir = os.path.join(self.done_dir, output_rel_dir)
             if not os.path.exists(output_dir):
                 try:
                     os.makedirs(output_dir)
                 except:
-                    self.logging.error("Unable to create output directory {}".format(output_rel_dir))
-                    self.ignore_files.add(input_path)
-                    continue
-
-            output_path = os.path.join(output_dir, "{}.{}".format(input_base_name, self.profile.get("container", "mov")))
+                    logging.error("Unable to create backup directory {}".format(output_rel_dir))
             
-            if os.path.exists(output_path): #TODO: If not overwrite
-                continue
-
-            themis = Themis(input_path, logging=self.logging)
-            themis.analyze()
-
-            if not themis.process(output_path, self.profile):
-                self.logging.error("Encoding failed")
-                self.ignore_files.add(input_path)
-
-            #
-            # Move source file to "done" directory
-            #
-
-            if self.done_dir:
-                done_dir = os.path.join(self.done_dir, output_rel_dir)
-                if not os.path.exists(output_dir):
-                    try:
-                        os.makedirs(output_dir)
-                    except:
-                        self.logging.error("Unable to create backup directory {}".format(output_rel_dir))
+            if os.path.exist(output_dir):
+                done_path = os.path.join(self.done_dir, input_rel_path)
                 
-                if os.path.exist(output_dir):
-                    done_path = os.path.join(self.done_dir, input_rel_path)
-                    
-                    try:
-                        os.rename(fpath, dpath)
-                    except:
-                        logging.error("Unable to move source file to done")
+                try:
+                    os.rename(fpath, dpath)
+                except:
+                    logging.error("Unable to move source file to done")
 
             
 
@@ -159,12 +143,17 @@ if __name__ == "__main__":
     except:
         cfg = {}
 
+    valid_exts = ["mov", "mp4", "avi", "flv", "mpg", "mpeg", "mp4", "video", "m4v"]
+    
     input_dir = cfg.get("input_dir", "input")
     output_dir = cfg.get("output_dir", "output")
 
-    watch = WatchFolder(
+    watch = ThemisWatchFolder(
         input_dir=input_dir, 
-        output_dir=output_dir, 
-        ) #TODO: kwargs
+        output_dir=output_dir,
+        valid_exts=valid_exts
+        )
 
     watch.start()
+
+
