@@ -23,33 +23,15 @@ class BaseProcessor():
             self.args,
             stdin=kwargs.get("stdin", None),
             stdout=kwargs.get("stdout", subprocess.PIPE),
-            stderr=kwargs.get("stderr", subprocess.PIPE)
+            stderr=kwargs.get("stderr", subprocess.PIPE),
+            close_fds=True
             )
         if kwargs.get("check_output", True):
             self.check_output(handler=kwargs.get("handler", False))
 
-    @property 
+    @property
     def error(self):
         return self.err + self.buff + decode_if_py3(self.proc.stderr.read())
-
-
-class FFMpeg(BaseProcessor):
-    default_args = ["ffmpeg", "-y"]
-
-    def check_output(self, handler=False):
-        self.buff = ""
-        while self.proc.poll() == None:
-            ch = decode_if_py3(self.proc.stderr.read(1))
-            if ch in ["\n", "\r"]:
-                if self.buff.startswith("frame="):
-                    at_frame = self.buff.split("fps")[0].split("=")[1].strip()
-                    if handler:
-                        handler(at_frame)
-                self.err += self.buff + "\n"
-                self.buff = ""
-            else:
-                self.buff += ch
-        return self.proc.returncode
 
 
 class Sox(BaseProcessor):
