@@ -3,17 +3,17 @@ themis
 
 ffmpeg based file ingest server
 
-Prerequisities
---------------
+Prerequisites
+-------------
 
-Themis requires ffmpeg and sox to be installed. 
-Use inst.ffmpeg.sh script to install latest tested version on Debian/Ubuntu machine.
+Themis requires ffmpeg and sox to be installed.
+Use [inst.ffmpeg.sh](https://github.com/immstudios/installers/blob/master/install.ffmpeg.sh)
+to install latest tested version on Debian/Ubuntu machine.
 
 transcode.py
 ------------
 
 Example script.
-
 
 ### Configuration
 

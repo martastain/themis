@@ -1,3 +1,4 @@
+import time
 import subprocess
 
 from nxtools import logging, decode_if_py3
@@ -42,8 +43,10 @@ class Sox(BaseProcessor):
         while self.proc.poll() == None:
             ch = decode_if_py3(self.proc.stderr.read(1))
             if ch in ["\n", "\r"]:
-                if self.buff.startswith("In:"):
-                    at_frame = self.buff.split("%")[0].split(":")[1].strip()
+                line = self.buff.strip()
+                if line.startswith("In:"):
+                    at_frame = line.split("%")[0].split(":")[1].strip()
+                    at_frame = float(at_frame)
                     if handler:
                         handler(at_frame)
                 self.err += self.buff + "\n"
