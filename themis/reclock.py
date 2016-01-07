@@ -8,8 +8,6 @@ from processors import Sox
 __all__ = ["encode_reclock"]
 
 
-
-
 def reclock_audio_tracks(parent):
     parent.set_status("Extracting audio track(s)")
     cmd = []
@@ -50,7 +48,6 @@ def reclock_audio_tracks(parent):
         if parent.gain_change:
             cmd.extend(["gain", parent.gain_change])
 
-        logging.debug("Processing audio")
         sox = Sox(*cmd)
         result = sox.start(handler=parent.progress_handler)
 

@@ -1,9 +1,9 @@
 
 # TODO
 #   - Reimplement sox
-#   - Progress handling
 #   - Reporting (return meta dict)
 #   - Reclock encoder error handling
+#   - Move matching files
 
 from __future__ import print_function
 
@@ -136,11 +136,11 @@ class Themis():
 
     def analyse(self):
         self.current_phase = 1
-        self.set_status("Analysing file {}".format(self.friendly_name), level="info")
+        self.set_status("Analysing {}".format(self.friendly_name))
         self.analyse_result = ffanalyse(self.input_path, progress_handler=self.frame_progress)
 
     def probe(self):
-        self.set_status("Probing file {}".format(self.friendly_name), level="info")
+        self.set_status("Probing {}".format(self.friendly_name))
         self.probe_result = ffprobe(self.input_path)
         self.audio_tracks = []
 
@@ -210,20 +210,34 @@ class Themis():
     ##
 
     def process(self):
-        start_time = time.time()
-        if not self.probe_result:
-            self.probe()
-        if not self.analyse_result:
-            self.analyse()
-        if not self._process():
+        self.set_status("Transcoding {}".format(self.friendly_name), level="info")
+        try:
+            start_time = time.time()
+            if not self.probe_result:
+                self.probe()
+            if not self.analyse_result:
+                self.analyse()
+                result = self._process()
+        except KeyboardInterrupt:
+            print ()
+            logging.warning("Transcoding aborted", level="warning")
+            result = False
+        if not result:
             if os.path.exists(self.output_path):
                 os.remove(self.output_path)
-                self.set_status("Transcoding failed")
+                self.set_status("Transcoding failed", level="error")
             return False
         end_time = time.time()
         proc_time = end_time - start_time
         speed = self.duration / proc_time
-        self.set_status("Transcoding {:02f}s long video finished in {} ({:.2f}x realtime)".format(self.duration, s2words(proc_time) , speed), level="good_news" )
+        self.set_status(
+            "Transcoding {:.2f}s long video finished in {} ({:.2f}x realtime)".format(
+                self.duration,
+                s2words(proc_time),
+                speed
+                ),
+            level="good_news"
+            )
         return True
 
     def _process(self):
@@ -241,7 +255,13 @@ class Themis():
 
         for key in compare_v:
             if self.settings[key] != self.meta[key]:
-                logging.debug("Source {} does not match target format. IS: {} SHOULD BE: {}".format(key, self.meta[key], self.settings[key]))
+                logging.debug(
+                    "Source {} does not match target format. IS: {} SHOULD BE: {}".format(
+                        key,
+                        self.meta[key],
+                        self.settings[key]
+                        )
+                    )
                 encode_video = True
                 break
         else:
@@ -256,15 +276,19 @@ class Themis():
             if self.settings["deinterlace"] and self.is_interlaced:
                 logging.debug("Video will be deinterlaced")
                 self.filters.append(filter_deinterlace())
-            self.filters.append(filter_arc(self.settings["width"], self.settings["height"], self.meta["aspect_ratio"]))
+            self.filters.append(
+                filter_arc(self.settings["width"],
+                    self.settings["height"],
+                    self.meta["aspect_ratio"]
+                    )
+                )
 
             source_fps = self.meta.get("frame_rate", 25)
             profile_fps = self.settings.get("frame_rate", 25)
-            if source_fps >= profile_fps or profile_fps - source_fps > 4:
+            if source_fps >= profile_fps or profile_fps - source_fps > 3:
                 encode_method =  encode_direct
             else:
                 encode_method =  encode_reclock
         else:
             encode_method =  encode_audio_only
-
         return encode_method(self)
