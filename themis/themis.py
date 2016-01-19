@@ -1,4 +1,3 @@
-
 # TODO
 #   - Reimplement sox
 #   - Reporting (return meta dict)
@@ -122,7 +121,6 @@ class Themis():
             "good_news" : logging.goodnews
         }.get(level, False)(message)
 
-
     def progress_handler(self, progress):
         pass
 
@@ -209,23 +207,19 @@ class Themis():
     # Main process
     ##
 
-    def process(self):
+    def process(self, **kwargs):
+        start_time = time.time()
+        self.settings.update(kwargs)
         self.set_status("Transcoding {}".format(self.friendly_name), level="info")
         try:
-            start_time = time.time()
-            if not self.probe_result:
-                self.probe()
-            if not self.analyse_result:
-                self.analyse()
-                result = self._process()
+            result = self._process()
         except KeyboardInterrupt:
             print ()
             logging.warning("Transcoding aborted", level="warning")
             result = False
         if not result:
-            if os.path.exists(self.output_path):
-                os.remove(self.output_path)
-                self.set_status("Transcoding failed", level="error")
+            self.fail_clean_up()
+            self.set_status("Transcoding failed", level="error")
             return False
         end_time = time.time()
         proc_time = end_time - start_time
@@ -240,10 +234,19 @@ class Themis():
             )
         return True
 
+    def fail_clean_up(self):
+        if os.path.exists(self.output_path):
+            os.remove(self.output_path)
+
     def _process(self):
+        if not self.probe_result:
+            self.probe()
+        if not self.analyse_result:
+            self.analyse()
         ##
         # Check, which streams must be re-encoded
         ##
+
         compare_v = [
             "container",
             "frame_rate",
