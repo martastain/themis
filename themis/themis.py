@@ -101,10 +101,10 @@ class Themis():
 
     @property
     def output_path(self):
-        return os.path.join(
+        return self.settings.get("output_path", os.path.join(
                 self.settings["output_dir"],
                 "{}.{}".format(self.base_name, self.settings["container"])
-                )
+                ))
 
     ##
     # Logging
