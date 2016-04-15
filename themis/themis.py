@@ -101,10 +101,10 @@ class Themis():
 
     @property
     def output_path(self):
-        return self.settings.get("output_path", os.path.join(
+        return self.settings.get("output_path", False) or  os.path.join(
                 self.settings["output_dir"],
                 "{}.{}".format(self.base_name, self.settings["container"])
-                ))
+                )
 
     ##
     # Logging
@@ -209,6 +209,7 @@ class Themis():
 
     def process(self, **kwargs):
         start_time = time.time()
+        logging.debug("Updating settings:", str(kwargs))
         self.settings.update(kwargs)
         self.set_status("Transcoding {}".format(self.friendly_name), level="info")
         try:

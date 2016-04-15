@@ -37,7 +37,7 @@ class ThemisWatchFolder(WatchFolder):
 
         themis = Themis(input_path)
 
-        if not themis.process(output_path, self.profile):
+        if not themis.process(output_path=output_path, self.profile):
             logging.error("Encoding failed")
             self.ignore_files.add(input_path)
 
