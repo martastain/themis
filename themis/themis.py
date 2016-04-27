@@ -132,10 +132,10 @@ class Themis():
     # Source metadata extraction
     ##
 
-    def analyse(self):
+    def analyse(self, video=True, audio=True):
         self.current_phase = 1
         self.set_status("Analysing {}".format(self.friendly_name))
-        self.analyse_result = ffanalyse(self.input_path, progress_handler=self.frame_progress)
+        self.analyse_result = ffanalyse(self.input_path, progress_handler=self.frame_progress, video=video, audio=audio)
 
     def probe(self):
         self.set_status("Probing {}".format(self.friendly_name))
@@ -180,15 +180,17 @@ class Themis():
 
     @property
     def loudness(self):
-        if not self.analyse_result:
-            self.analyse()
-        return self.analyse_result.get("audio/r128/i", self.settings["loudness"])
+        key = "audio/r128/i"
+        if not key in self.analyse_result:
+            self.analyse(video=False)
+        return self.analyse_result.get(key, self.settings["loudness"])
 
     @property
     def is_interlaced(self):
-        if not self.analyse_result:
+        key = "video/is_interlaced"
+        if not key in self.analyse_result:
             self.analyse()
-        return self.analyse_result.get("video/is_interlaced", False)
+        return self.analyse_result.get(key, False)
 
     @property
     def gain_change(self):
@@ -242,8 +244,6 @@ class Themis():
     def _process(self):
         if not self.probe_result:
             self.probe()
-        if not self.analyse_result:
-            self.analyse()
         ##
         # Check, which streams must be re-encoded
         ##
@@ -290,9 +290,9 @@ class Themis():
             source_fps = self.meta.get("frame_rate", 25)
             profile_fps = self.settings.get("frame_rate", 25)
             if source_fps >= profile_fps or profile_fps - source_fps > 3:
-                encode_method =  encode_direct
+                encode_method = encode_direct
             else:
-                encode_method =  encode_reclock
+                encode_method = encode_reclock
         else:
             encode_method =  encode_audio_only
         return encode_method(self)
