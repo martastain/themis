@@ -1,4 +1,1 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from themis import *
+from .themis import Themis
