@@ -159,6 +159,17 @@ class Themis(object):
 
         encode(self)
 
+        # temp file clean-up
+        for atrack in self.audio_tracks:
+            for l in [
+                    atrack.source_audio_path,
+                    atrack.final_audio_path
+                    ]:
+                if os.path.exists(l):
+                    logging.debug("removing {}".format(l))
+                    os.remove(l)
+
+        # final report
         total_duration = self.meta["num_frames"] / self.meta["frame_rate"]
         end_time = time.time()
         proc_time = end_time - start_time
