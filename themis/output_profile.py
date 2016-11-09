@@ -5,6 +5,7 @@ __all__ = ["get_output_profile"]
 
 default_bitrates = {
         "dnxhd" : "120M",
+        "mjpeg" :  False,
         "mpeg2video" : "50M",
         "libx264" : "6M",
         "libx265" : "4M",
@@ -14,6 +15,7 @@ default_bitrates = {
 
 default_audio_codecs = {
         "dnxhd" : "pcm_s16le",
+        "mjpeg" : "pcm_s16le",
         "mpeg2video" : "mp2",
         "libx264" : "libfdk_aac",
         "libx265" : "libfdk_aac"
@@ -36,13 +38,17 @@ def get_output_profile(**kwargs):
     if video_bitrate:
         result.append(["b:v", video_bitrate])
 
+    if kwargs["qscale"]:
+        result.append(["q:v", kwargs["qscale"]])
+
     if kwargs["gop_size"]:
         gop_size = kwargs["gop_size"]
         result.extend([
                 ["g", gop_size],
                 ["keyint_min", gop_size],
-                ["x264opts", "keyint={g}:min-keyint={g}:no-scenecut".format(g=gop_size)]
             ])
+        if kwargs["video_codec"] == "libx264":
+            result.append(["x264opts", "keyint={g}:min-keyint={g}:no-scenecut".format(g=gop_size)])
 
     #
     # Audio
