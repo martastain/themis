@@ -35,14 +35,15 @@ class ThemisWatchFolder(WatchFolder):
         if os.path.exists(output_path):
             return False
 
-        themis = Themis(input_path)
-        themis.process(
-                output_path=output_path,
-                video_bitrate="36M"
-            )
-
-#            logging.error("Encoding failed")
-#            self.ignore_files.add(input_path)
+        try:
+            themis = Themis(input_path)
+            themis.process(
+                    output_path=output_path,
+                    video_bitrate="36M"
+                )
+        except Exception:
+            log_traceback("Encoding failed")
+            self.ignore_files.add(input_path)
 
 
 
