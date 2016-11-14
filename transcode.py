@@ -17,6 +17,7 @@ from themis import Themis
 
 class ThemisWatchFolder(WatchFolder):
     def process(self, input_path):
+        print input_path
         input_rel_path = input_path.replace(self.input_dir, "", 1).lstrip("/")
         input_base_name = get_base_name(input_rel_path)
 
@@ -28,50 +29,37 @@ class ThemisWatchFolder(WatchFolder):
             except:
                 logging.error("Unable to create output directory {}".format(output_rel_dir))
                 self.ignore_files.add(input_path)
-                continue
+                return False
 
-        output_path = os.path.join(output_dir, "{}.{}".format(input_base_name, self.profile.get("container", "mov")))
+        output_path = os.path.join(output_dir, "{}.{}".format(input_base_name, "mov"))
+        if os.path.exists(output_path):
+            return False
 
-        if os.path.exists(output_path): #TODO: If not overwrite
-            continue
-
-        themis = Themis(input_path)
-
-        if not themis.process(output_path=output_path, self.profile):
-            logging.error("Encoding failed")
+        try:
+            themis = Themis(input_path)
+            themis.process(
+                    output_path=output_path,
+                    video_bitrate="36M"
+                )
+        except Exception:
+            log_traceback("Encoding failed")
             self.ignore_files.add(input_path)
-
-        ##
-        # Move source file to "done" directory
-        ##
-
-        if self.done_dir:
-            done_dir = os.path.join(self.done_dir, output_rel_dir)
-            if not os.path.exists(output_dir):
-                try:
-                    os.makedirs(output_dir)
-                except:
-                    logging.error("Unable to create backup directory {}".format(output_rel_dir))
-
-            if os.path.exist(output_dir):
-                done_path = os.path.join(self.done_dir, input_rel_path)
-
-                try:
-                    os.rename(fpath, dpath)
-                except:
-                    logging.error("Unable to move source file to done")
 
 
 
 
 
 if __name__ == "__main__":
-    try:
-        cfg = json.load(open("transcode.json"))
-    except:
-        cfg = {}
+    settings_file = "settings.json"
 
-    valid_exts = ["mov", "mp4", "avi", "flv", "mpg", "mpeg", "mp4", "video", "m4v"]
+    if os.path.exists(settings_file):
+        try:
+            cfg = json.load(open(settings_file))
+        except:
+            log_traceback()
+            cfg = {}
+
+    valid_exts = ["mov", "mp4", "avi", "flv", "mpg", "mpeg", "mp4", "video", "m4v", "mts", "MTS", "MP4"]
 
     input_dir = cfg.get("input_dir", "input")
     output_dir = cfg.get("output_dir", "output")

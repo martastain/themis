@@ -23,6 +23,7 @@ default_settings = {
         # optional
 
         "video_bitrate" : False,
+        "qscale"        : False,
         "gop_size"      : False,
         "audio_codec"   : False,
         "audio_bitrate" : False,
