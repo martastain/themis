@@ -13,6 +13,9 @@ class AudioTrack():
     def __repr__(self):
         return "Audio track ({})".format(self.data["channel_layout"])
 
+    def get(self, key, default=False):
+        return self.data.get(key, default)
+
     @property
     def id(self):
         return self["index"]
