@@ -54,6 +54,8 @@ def encode(parent):
             result = sox.start(handler=parent.progress_handler)
 
         track_mapping.append(["map", "{}:{}".format(i+1, 0)])
+        if track.get("tags", {}).get("language", False):
+            track_mapping.append(["metadata:s:{}".format(i+1), "language={}".format(track["tags"]["language"])])
         output_format.append(["i", track.final_audio_path])
 
 
@@ -71,7 +73,7 @@ def encode(parent):
         dec.start(stdout=subprocess.PIPE)
         enc_input = "-"
         enc_stdin = dec.stdout
-        enc_stderr = open(os.devnull, "w")
+        enc_stderr = None #open(os.devnull, "w")
     else:
         enc_input = parent.source_path
         enc_stdin = None
@@ -98,6 +100,8 @@ def encode(parent):
         while enc.is_running:
             enc.process(progress_handler=lambda x: parent.progress_handler(float(x) / parent.meta["num_frames"] * 100))
 
+
+    return True
 
 
 
