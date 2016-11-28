@@ -35,7 +35,7 @@ def extract(parent):
         track.source_audio_path = track.final_audio_path = get_temp("wav")
         cmd.extend(["-map", "0:{}".format(track.id)])
         cmd.extend(["-c:a", "pcm_s16le"])
-        if parent["to_stereo"] and track["channels"] > 2:
+        if parent["to_stereo"]:
             cmd.extend(["-ac", "2"])
         cmd.append(track.source_audio_path)
 
