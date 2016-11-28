@@ -78,7 +78,6 @@ def encode(parent):
         enc_input = parent.source_path
         enc_stdin = None
         enc_stderr = subprocess.PIPE
-        enc_stderr = None
 
 
     enc = FFMPEG(enc_input, parent.output_path, output_format, input_format)

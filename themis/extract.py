@@ -50,7 +50,10 @@ def extract(parent):
     logging.debug("Executing: {}".format(" ".join(cmd)))
     proc = subprocess.Popen(cmd, stderr=subprocess.PIPE)
     while proc.poll() == None:
-        ch = decode_if_py3(proc.stderr.read(1))
+        try:
+            ch = decode_if_py3(proc.stderr.read(1))
+        except:
+            continue
         if ch in ["\n", "\r"]:
             line = buff.strip()
             if line.startswith("frame="):
