@@ -40,7 +40,7 @@ default_settings = {
         "loudness"      : -23,
         "logo"          : False,
 
-        "strip_tracks"   : 2,    # 0 - keep all audio channels, 1 - Keep only first track, 2 - Keep only first track or keep all if they are mono
+        "strip_tracks"   : 2,    # 0 - keep all audio tracks, 1 - Keep only first track, 2 - Keep only first track or keep all if they are mono
         "to_stereo"      : True, # Mixdown multichannel audio tracks to stereo
     }
 
@@ -158,7 +158,7 @@ class Themis(object):
         self.set_status("Extracting tracks")
         self.meta.update(extract(self))
 
-        encode(self)
+        success = encode(self)
 
         # temp file clean-up
         for atrack in self.audio_tracks:
@@ -169,6 +169,14 @@ class Themis(object):
                 if os.path.exists(l):
                     logging.debug("removing {}".format(l))
                     os.remove(l)
+
+
+        if not success:
+            try:
+                os.remove(self.output_path)
+            except:
+                pass
+
 
         # final report
         total_duration = self.meta["num_frames"] / self.meta["frame_rate"]
