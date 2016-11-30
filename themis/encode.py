@@ -73,7 +73,7 @@ def encode(parent):
         dec.start(stdout=subprocess.PIPE)
         enc_input = "-"
         enc_stdin = dec.stdout
-#        enc_stderr = None #open(os.devnull, "w")
+        enc_stderr = open(os.devnull, "w")
     else:
         enc_input = parent.source_path
         enc_stdin = None
