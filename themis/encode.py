@@ -39,9 +39,11 @@ def encode(parent):
 
 
     for i, track in enumerate(parent.audio_tracks):
-        parent.set_status("Stretching audio track {} of {}".format(i+1, len(parent.audio_tracks)))
         if encode_method == "reclock":
-            logging.debug("Reclocking audio by factor {}".format(sox_tempo))
+            parent.set_status("Reclocking audio {} of {}".format(
+                i+1,
+                len(parent.audio_tracks),
+                ))
             f_in = track.source_audio_path
             f_out = track.final_audio_path = get_temp("wav")
             cmd = [
@@ -69,13 +71,13 @@ def encode(parent):
     output_format.extend(get_output_profile(**parent.settings))
 
     if encode_method == "reclock":
-        dec = FFMPEG(parent.source_path, "-", source_format)
+        dec = FFMPEG(parent.input_path, "-", source_format)
         dec.start(stdout=subprocess.PIPE)
         enc_input = "-"
         enc_stdin = dec.stdout
         enc_stderr = open(os.devnull, "w")
     else:
-        enc_input = parent.source_path
+        enc_input = parent.input_path
         enc_stdin = None
         enc_stderr = subprocess.PIPE
 
@@ -98,7 +100,6 @@ def encode(parent):
     else:
         while enc.is_running:
             enc.process(progress_handler=lambda x: parent.progress_handler(float(x) / parent.meta["num_frames"] * 100))
-
 
     return True
 

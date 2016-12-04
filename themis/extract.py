@@ -15,6 +15,8 @@ def extract(parent):
         - analyze loudness (audio tracks may be time-stretched later)
     """
 
+    parent.set_status("Extracting tracks")
+
     filters = []
     if parent["deinterlace"] and parent.meta["frame_rate"] >= 25:
         filters.append("idet")
@@ -23,7 +25,7 @@ def extract(parent):
 
     cmd = [
             "ffmpeg",
-            "-i", parent.source_path,
+            "-i", parent.input_path,
         ]
     if filters:
         cmd.extend([

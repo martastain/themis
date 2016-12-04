@@ -56,7 +56,6 @@ def get_output_profile(**kwargs):
 
     audio_codec = kwargs.get("audio_codec", default_audio_codecs.get("video_codec", False))
     if not audio_codec:
-        logging.warning("Audio codec not set. Using PCM.")
         audio_codec = "pcm_s16le"
     result.append(["c:a", audio_codec])
 
