@@ -6,16 +6,17 @@ from nxtools import logging, decode_if_py3
 class BaseProcessor():
     default_args = []
 
+
+class Sox(BaseProcessor):
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
-        self.args = []
-        for arg in self.default_args:
-            self.args.append(str(arg))
+        self.args = ["sox", "-S"]
         for arg in args:
             self.args.append(str(arg))
         self.proc = None
         self.err = ""
         self.buff = ""
+
 
     def start(self, **kwargs):
         message = "Executing: " + " ".join(self.args)
@@ -33,10 +34,6 @@ class BaseProcessor():
     @property
     def error(self):
         return self.err + self.buff + decode_if_py3(self.proc.stderr.read())
-
-
-class Sox(BaseProcessor):
-    default_args = ["sox", "-S"]
 
     def check_output(self, handler=False):
         self.buff = ""
