@@ -9,17 +9,7 @@ from .output_profile import get_output_profile
 __all__ = ["encode"]
 
 def encode(parent):
-    source_fps = parent.meta["frame_rate"]
-    profile_fps = parent.settings["frame_rate"]
-    sox_tempo = float(profile_fps) / source_fps
-
-    if source_fps >= profile_fps or profile_fps - source_fps > 3:
-        encode_method = "direct"
-        input_format = []
-        output_format = [
-                ]
-        track_mapping = [["map", "0:{}".format(parent.meta["video_index"])]]
-    else:
+    if parent.reclock_ratio:
         encode_method = "reclock"
         source_format = [
                     ["an"],
@@ -36,6 +26,13 @@ def encode(parent):
         output_format = []
         track_mapping = [["map", "0:0"]]
 
+    else:
+        encode_method = "direct"
+        input_format = []
+        output_format = [
+                ]
+        track_mapping = [["map", "0:{}".format(parent.meta["video_index"])]]
+
 
 
     for i, track in enumerate(parent.audio_tracks):
@@ -51,7 +48,7 @@ def encode(parent):
                     "-r", parent.settings.get("audio_sample_rate", 48000),
                     f_out
                 ]
-            cmd.extend(["tempo", sox_tempo])
+            cmd.extend(["tempo", parent.reclock_ratio])
             sox = Sox(*cmd)
             result = sox.start(handler=parent.progress_handler)
 

@@ -76,6 +76,14 @@ class Themis(BaseTranscoder):
         return join_filters(*filters)
 
 
+    @property
+    def reclock_ratio(self):
+        source_fps = self.meta["frame_rate"]
+        profile_fps = self.settings["frame_rate"]
+        if source_fps >= profile_fps or profile_fps - source_fps > 3:
+            return None
+        return float(profile_fps) / source_fps
+
 
     def process(self):
         logging.debug("{}: Has {} audio track(s)".format(self.friendly_name, len(self.audio_tracks)))
