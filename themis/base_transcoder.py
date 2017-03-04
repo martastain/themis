@@ -3,6 +3,7 @@ from __future__ import print_function
 import time
 
 from nxtools import *
+from nxtools.media import *
 
 #
 # Metadata extraction helpers

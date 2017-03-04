@@ -3,6 +3,8 @@ import os
 import subprocess
 
 from nxtools import *
+from nxtools.media import *
+
 from .sox import Sox
 from .output_profile import get_output_profile
 

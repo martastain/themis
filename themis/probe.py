@@ -1,4 +1,5 @@
 from nxtools import *
+from nxtools.media import *
 
 __all__ = ["probe"]
 
