@@ -11,8 +11,13 @@ from .output_profile import get_output_profile
 __all__ = ["encode"]
 
 def encode(parent):
+    source_duration = parent.meta["num_frames"] / parent.meta["frame_rate"]
+    target_duration = source_duration
+
     if parent.reclock_ratio:
+        target_duration /= parent.reclock_ratio
         encode_method = "reclock"
+        source_input_format = [["t", source_duration]]
         source_format = [
                     ["an"],
                     ["map", "0:{}".format(parent.meta["video_index"])],
@@ -25,14 +30,13 @@ def encode(parent):
                     ["pix_fmt", parent.settings["pixel_format"]],
                     ["s", "{}x{}".format(parent.settings["width"], parent.settings["height"])],
                 ]
-        output_format = []
+        output_format = [["t", target_duration]]
         track_mapping = [["map", "0:0"]]
 
     else:
         encode_method = "direct"
-        input_format = []
-        output_format = [
-                ]
+        input_format = [["t", source_duration]]
+        output_format = []
         track_mapping = [["map", "0:{}".format(parent.meta["video_index"])]]
 
 
@@ -55,12 +59,14 @@ def encode(parent):
             result = sox.start(handler=parent.progress_handler)
 
         track_mapping.append(["map", "{}:{}".format(i+1, 0)])
+        track_mapping.append(["filter:{}".format(i+1), "apad"])
         if track.get("tags", {}).get("language", False):
             track_mapping.append(["metadata:s:{}".format(i+1), "language={}".format(track["tags"]["language"])])
         output_format.append(["i", track.final_audio_path])
 
 
     parent.set_status("Transcoding")
+    logging.debug("Source duration:", source_duration)
 
     output_format.extend(track_mapping)
 
@@ -70,7 +76,7 @@ def encode(parent):
     output_format.extend(get_output_profile(**parent.settings))
 
     if encode_method == "reclock":
-        dec = FFMPEG(parent.input_path, "-", source_format)
+        dec = FFMPEG(parent.input_path, "-", source_format, source_input_format)
         dec.start(stdout=subprocess.PIPE)
         enc_input = "-"
         enc_stdin = dec.stdout
@@ -101,7 +107,3 @@ def encode(parent):
             enc.process(progress_handler=lambda x: parent.progress_handler(float(x) / parent.meta["num_frames"] * 100))
 
     return True
-
-
-
-

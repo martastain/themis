@@ -63,10 +63,14 @@ def get_output_profile(**kwargs):
     if audio_bitrate:
         result.append(["b:a", audio_bitrate])
 
+
+
     #
     # Container
     #
 
+    result.append(["shortest"])
+    result.append(["async", 2000])
     result.append(["map_metadata", "-1"])
 
     if kwargs["container"] == "mov" and kwargs["frame_rate"] == 25:
